@@ -17,6 +17,7 @@ body {
     transform-origin: top left;
     /* background-color: blue; */
     transform: scale(1.3);
+    overflow: hidden;
 }
 
 .main-content > img {
