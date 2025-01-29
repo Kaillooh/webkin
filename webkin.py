@@ -53,19 +53,20 @@ def toggle_shadowcast(obj, status) :
     material = obj.material_slots[0].material
     node_tree = material.node_tree
     node_group = get_node_group(node_tree.nodes, "ShadowCast")
+    assert node_group is not None, "Shadowcast shader node group wasn't found for %s" % obj.name
     node_group.inputs["Active"].default_value = 1.0 if status else 0.0
 
 def get_mesh_objects(col_name) : 
     col = bpy.data.collections[col_name]
     return [o for o in col.all_objects if type(o.data).__name__ == "Mesh"]
 
-def isolate(obj) : 
-    for o in get_mesh_objects("Papercut") : 
+def isolate(obj, col_name) : 
+    for o in get_mesh_objects(col_name) : 
         shadow_only = obj.name != o.name
         toggle_shadowcast(o, shadow_only)
 
-def disable_shadowcast() :
-    for o in get_mesh_objects("Papercut") : 
+def disable_shadowcast(col_name) :
+    for o in get_mesh_objects(col_name) : 
         toggle_shadowcast(o, False)
 
 
@@ -80,6 +81,7 @@ class LayoutElement :
         if key in self.data.keys() : 
             return self.data[key]
     
+    #@ get_px_position
     def get_px_position(self, origin=None) :
         if origin is None : 
             origin = [0.0,0.0]
@@ -95,8 +97,8 @@ class LayoutElement :
         # html position being from top downwards
 
         return [
-            self.pixels(pos[0]),
-            -self.pixels(pos[1]*.85),
+            -self.pixels(pos[0]),
+            -self.pixels(pos[1]),
         ]
     
     def get_px_depth(self) : 
@@ -110,7 +112,7 @@ class LayoutElement :
         if mode == "TOPLEFT" :
             size = self.get_size()
             pos = [
-                pos[0]-size[0]/2,
+                pos[0]+size[0]/2,
                 pos[1]+size[1]/2,
             ]
 
@@ -138,15 +140,16 @@ class LayoutElement :
     def pixels(self, value) : 
         return self.layout.pixels(value)
     
-    def get_html(self) :
+    #@ get_html
+    def get_html(self, asset_location="Render") :
         origin = self.layout.get_origin()
         px_pos = self.get_px_position(origin)
         name = self.name
         px_depth = self.get_px_depth()
         res = self.get_resolution()
         
-        template = '<img src="Render/%s.png" width="%d" height="%s" style="z-index: %d; left: %dpx; top: %dpx;">' 
-        return template % (name, res[0], res[1], px_depth, px_pos[0], px_pos[1])
+        template = '<img src="%s/%s.png" width="%d" height="%s" style="z-index: %d; left: %dpx; top: %dpx;">' 
+        return template % (asset_location, name, res[0], res[1], px_depth, px_pos[0], px_pos[1])
 
 
 class LayoutInfos : 
@@ -179,9 +182,11 @@ class LayoutInfos :
         ppm = self.target_px_width / self.get_width()
         return int(value * ppm)
     
+    #@ get_origin
     def get_origin(self) :
+        print('Origin calculation, base positions : ', {e.name : e.get_position("TOPLEFT") for e in self.elements()})
         pos = np.array([e.get_position("TOPLEFT") for e in self.elements()])
-        return [np.min(pos[:,0]), np.max(pos[:,1])]
+        return [np.max(pos[:,0]), np.max(pos[:,1])]
          
 
 
@@ -192,14 +197,14 @@ def get_layout_infos(objects) :
     for obj in objects :  
         coords = np.array([v.co for v in obj.data.vertices])
         coords = to_world(coords, obj.matrix_world)
-        print("Coords : ", coords)
+        # print("Coords : ", coords)
 
-        min_x = np.min(coords[:,1])
-        max_x = np.max(coords[:,1])
+        min_x = np.min(coords[:,0])
+        max_x = np.max(coords[:,0])
         min_y = np.min(coords[:,2])
         max_y = np.max(coords[:,2])
 
-        depth = np.mean(coords[:,0])
+        depth = np.mean(coords[:,1])
 
         pos = [np.mean([max_x, min_x]), np.mean([max_y, min_y])]
         x_size = max_x-min_x
@@ -232,15 +237,15 @@ def create_cam(location, ortho_scale) :
     bpy.context.scene.collection.objects.link(camera_object)
     bpy.context.scene.camera = camera_object
 
-    camera_object.location = (15, location[0], location[1])
-    camera_object.rotation_euler = [math.pi/2, 0, math.pi/2]
+    camera_object.location = (location[0], 15, location[1])
+    camera_object.rotation_euler = [math.pi/2, 0, math.pi]
 
     camera_data.type = 'ORTHO'
     camera_data.ortho_scale = ortho_scale
 
     return camera_object
 
-def export_object(layout_element:LayoutElement, path, skip_render=False) : 
+def export_object(layout_element:LayoutElement, path, col_name, skip_render=False) : 
     scene = bpy.context.scene
     obj = layout_element.get("object")
     print("Exporting %s to %s" % (obj.name, path))
@@ -261,7 +266,7 @@ def export_object(layout_element:LayoutElement, path, skip_render=False) :
 
     new_cam = create_cam(pos, ortho_scale)
 
-    isolate(obj)
+    isolate(obj, col_name)
 
     bpy.context.scene.render.filepath = os.path.join(path, obj.name+".png")
     bpy.context.scene.render.image_settings.file_format = 'PNG'
@@ -275,11 +280,11 @@ def export_object(layout_element:LayoutElement, path, skip_render=False) :
 
     bpy.data.objects.remove(new_cam)
 
-    disable_shadowcast()
+    disable_shadowcast(col_name)
 
-def export_html(layout_infos, template_path, output_path) : 
+def export_html(layout_infos : LayoutInfos, template_path, output_path, assets_location) : 
 
-    html_elements = [e.get_html() for e in layout_infos.elements()]
+    html_elements = [e.get_html(assets_location) for e in layout_infos.elements()]
     print(html_elements)
 
     with open(template_path, 'r') as infile : 
@@ -292,27 +297,36 @@ def export_html(layout_infos, template_path, output_path) :
     with open(output_path, 'w') as outfile : 
         outfile.write(template)
 
+name = "Chapter1_testb"
+path = "D:\Documents\Scripts\WebKin\%s_assets" % name
+collection_name = "Diorama"
 
-path = "D:\Documents\Scripts\WebKin\Render"
-
-objects = get_mesh_objects("Papercut")
+objects = get_mesh_objects(collection_name)
 layout_infos = get_layout_infos(objects)
 layout_infos.set_target_px_width(600)
-    
+
+
 # for element in layout_infos.elements() : 
-#     export_object(element, path, skip_render=False)
+#     print("%s : " % element.name, element.get("size"))
+#     print("- position : ", element.get("pos"))
+#     print("- size : ", element.get("size"))
+#     print()
+    
+cloud2 = layout_infos.get_element("Cloud2")
+pos = cloud2.get_position("TOPLEFT")
+print("Cloud2 position : ", pos)
+bpy.context.scene.cursor.location = [pos[0], cloud2.get_depth(), pos[1]]
 
-pos = layout_infos.get_element("040_CLOUDS").get_position(mode="TOPLEFT")
 
-
-for element in layout_infos.elements() : 
-    print("%s : " % element.name, element.get_position())
-
+#@ base
 origin = layout_infos.get_origin()
 print("Origin : ", origin)
 pos = origin
-bpy.context.scene.cursor.location = [0, pos[0], pos[1]]
+bpy.context.scene.cursor.location = [pos[0], -2.2, pos[1]]
 
-export_html(layout_infos, "template.html", "mainmenu.html")
+for element in layout_infos.elements() : 
+    export_object(element, path, collection_name, skip_render=False)
+
+export_html(layout_infos, "template.html", "%s.html"%name, "%s_assets" % name)
 
 
