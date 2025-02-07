@@ -1,15 +1,22 @@
 var parallax_ratio = -0.0006
 // var parallax_ratio = -0.0
 
+function get_dof_data(){
+  var dofcontrol = document.getElementById("dofcontrol")
+  var elements = dofcontrol.children
+  var data = [];
+
+  for (var i = 0; i < elements.length; i++) {
+    var el = elements[i];
+    data.push([parseInt(el.getAttribute("pos"), 10), parseInt(el.getAttribute("focus"), 10)])
+  }
+
+  return data;
+}
+
 function get_focus(scroll_pos) {
   // Array of [scroll position, focus] pairs
-  var focus_index = [
-    [0, 133], //cloud2
-    [1600, 109], //moon
-    [2500, 226], //bridge
-    [3500, 406], //bird3
-    
-  ];
+  var focus_index = get_dof_data();
 
   // If scroll_pos is less than the first point, return the first focus value
   if (scroll_pos <= focus_index[0][0]) {
@@ -65,7 +72,7 @@ function on_scroll() {
 
     var focus = get_focus(scrollPosition);
     console.log("Focus for ", scrollPosition, " : ", focus);
-    const blurAmount = Math.abs(depth-focus) * 0.017; 
+    const blurAmount = Math.abs(depth-focus) * 0.0185; 
     el.style.filter = `blur(${blurAmount}px)`;
   });
 }

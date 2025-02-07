@@ -50,6 +50,10 @@ def get_node_group(nodes, name) :
                 return n
 
 def toggle_shadowcast(obj, status) :
+    if len(obj.material_slots) == 0 : 
+        print("Toggle shadowcast : skipping %s" % obj.name)
+        return
+    
     material = obj.material_slots[0].material
     node_tree = material.node_tree
     node_group = get_node_group(node_tree.nodes, "ShadowCast")
@@ -297,8 +301,8 @@ def export_html(layout_infos : LayoutInfos, template_path, output_path, assets_l
     with open(output_path, 'w') as outfile : 
         outfile.write(template)
 
-name = "Chapter1_testb"
-path = "D:\Documents\Scripts\WebKin\%s_assets" % name
+name = "Chapter1_v05"
+path = "D:\Documents\Scripts\WebKin\Chapter1_assets"
 collection_name = "Diorama"
 
 objects = get_mesh_objects(collection_name)
@@ -327,6 +331,6 @@ bpy.context.scene.cursor.location = [pos[0], -2.2, pos[1]]
 for element in layout_infos.elements() : 
     export_object(element, path, collection_name, skip_render=False)
 
-export_html(layout_infos, "template.html", "%s.html"%name, "%s_assets" % name)
+# export_html(layout_infos, "template.html", "%s.html"%name, "%s_assets" % name)
 
 

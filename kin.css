@@ -34,6 +34,14 @@ body {
     transform: translateY(0);
 }
 
+.dofcontrol{
+    display: none;
+}
+
+.dof {
+    display: none;
+}
+
 /* @media (max-width: 600px) {
     #main-content {
         transform: scale(100vw / 600);
