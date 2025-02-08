@@ -51,9 +51,8 @@ function set_content_width(width){
 }
 
 function on_scroll() {
-  const scrollPosition = window.scrollY;
   const z_offset_ratio = 0.7;
-
+  
   var width = window.innerWidth;
   var height = window.innerHeight;
   if (height > width || width < 800){
@@ -62,6 +61,9 @@ function on_scroll() {
   else {
     set_content_width(800)
   }
+  
+  var scrollPosition = window.scrollY;
+  // scrollPosition += height/2;
 
   document.querySelectorAll('.main-content > img').forEach(el => {
     const depth = parseFloat(getComputedStyle(el).getPropertyValue('z-index')) || 0;
@@ -70,8 +72,9 @@ function on_scroll() {
 
     el.style.transform = `translateY(${parallaxOffset}px)`;
 
-    var focus = get_focus(scrollPosition);
-    console.log("Focus for ", scrollPosition, " : ", focus);
+    var center_position = scrollPosition + height/2;
+    var focus = get_focus(center_position);
+    console.log("Focus for ", center_position, " : ", focus);
     const blurAmount = Math.abs(depth-focus) * 0.0185; 
     el.style.filter = `blur(${blurAmount}px)`;
   });

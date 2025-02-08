@@ -334,3 +334,4 @@ for element in layout_infos.elements() :
 # export_html(layout_infos, "template.html", "%s.html"%name, "%s_assets" % name)
 
 
+print("Export successful.")
