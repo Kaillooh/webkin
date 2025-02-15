@@ -302,12 +302,12 @@ def export_html(layout_infos : LayoutInfos, template_path, output_path, assets_l
         outfile.write(template)
 
 name = "Chapter1_v05"
-path = "D:\Documents\Scripts\WebKin\Chapter1_assets"
+path = "D:\Documents\Scripts\WebKin\Chapter1_assets_HD"
 collection_name = "Diorama"
 
 objects = get_mesh_objects(collection_name)
 layout_infos = get_layout_infos(objects)
-layout_infos.set_target_px_width(600)
+layout_infos.set_target_px_width(1800)
 
 
 # for element in layout_infos.elements() : 
