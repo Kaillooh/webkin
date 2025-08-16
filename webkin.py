@@ -301,7 +301,7 @@ def export_html(layout_infos : LayoutInfos, template_path, output_path, assets_l
     with open(output_path, 'w') as outfile : 
         outfile.write(template)
 
-name = "Chapter1_v05"
+name = "Chapter1_v06"
 path = "D:\Documents\Scripts\WebKin\Chapter1_assets_HD"
 collection_name = "Diorama"
 
@@ -329,6 +329,7 @@ pos = origin
 bpy.context.scene.cursor.location = [pos[0], -2.2, pos[1]]
 
 for element in layout_infos.elements() : 
+    # if "Feather" in element.name : 
     export_object(element, path, collection_name, skip_render=False)
 
 # export_html(layout_infos, "template.html", "%s.html"%name, "%s_assets" % name)
