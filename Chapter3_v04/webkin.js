@@ -26,7 +26,20 @@ var focus_data = {
   "22B1":0.5,
   "22A":1,
   "23F":1,
-  "24A":1.5,
+  "24A":2,
+  "25A":1.5,
+}
+
+var offset_data = {
+  "04A" : [0,20],
+}
+
+var scale_data = {
+  "03A" : 0.95,
+}
+
+var z_depth_data = {
+  "03A" : 365,
 }
 
 function set_content_width(width){
@@ -41,14 +54,29 @@ function set_content_width(width){
   return ratio
 }
 
-function get_focus(input) {
-  for (const key in focus_data) {
-    if (input.includes(key)) {
-      return focus_data[key];
+function get_value(filename, data, default_value) {
+  for (const key in data) {
+    if (filename.includes(key)) {
+      return data[key];
     }
   }
+  return default_value;
+}
 
-  return -1;
+function get_focus(filename) {
+  return get_value(filename, focus_data, -1)
+}
+
+function get_offset(filename) {
+  return get_value(filename, offset_data, [0,0])
+}
+
+function get_zdepth(filename) {
+  return get_value(filename, z_depth_data, -1)
+}
+
+function get_scale(filename) {
+  return get_value(filename, scale_data, 1)
 }
 
 function on_scroll() {
@@ -70,14 +98,27 @@ function on_scroll() {
     const depth = parseFloat(getComputedStyle(el).getPropertyValue('z-index')) || 0;
     const height = parseFloat(getComputedStyle(el).getPropertyValue('height')) || 0;
 
+    var manual_offset = get_offset(el.src)
+    x_offset = manual_offset[0]
+    y_offset = manual_offset[1]
+
+    scale = get_scale(el.src)
+
+    z_depth = get_zdepth(el.src)
+    if (z_depth != -1){
+      el.style.zIndex = z_depth
+    }
+
     // Calculating the distance between the center of the image and 
     // the center of the screen. The height dependant terms are 
     // there to transition from top/top distance to center/center.
 
     var rel_pos = el.getBoundingClientRect().top - H/2 + height/2*ratio
     const parallaxOffset = rel_pos * depth  * parallax_ratio
+    y_offset += parallaxOffset
 
-    el.style.transform = `translateY(${parallaxOffset}px)`;
+    // el.style.transform = `translateY(${parallaxOffset}px)`;
+    el.style.transform = `translate(${x_offset}px, ${y_offset}px) scale(${scale})`;
 
     // Distance from the center of the screen of either the 
     // top or lower border of the element
@@ -114,7 +155,7 @@ function on_scroll() {
 
   var focus = focus_pool/focus_stake;
   var focus_ratio = blur_ratio*focus_intensity_pool/focus_stake;
-  console.log("Focus : ", focus, focus_ratio);
+  // console.log("Focus : ", focus, focus_ratio);
 
   // Apply the focus element-wise after the final focus value has been calculated.
   document.querySelectorAll('.main-content > img').forEach(el => {
