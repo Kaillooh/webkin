@@ -25,6 +25,8 @@ var focus_data = {
   "21A":3,
   "22B1":0.5,
   "22A":1,
+  "23F":1,
+  "24A":1.5,
 }
 
 function set_content_width(width){
