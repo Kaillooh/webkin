@@ -4,7 +4,7 @@ var blur_ratio = 0.03;
 
 
 var focus_data = {
-  "01B2":1,
+  "01B2":1.5,
   "02A":2,
   "03A":2,
   "04A":0.3,
@@ -32,6 +32,7 @@ var focus_data = {
 
 var offset_data = {
   "04A" : [0,20],
+  "01B1" : [0,10],
 }
 
 var scale_data = {
@@ -39,6 +40,7 @@ var scale_data = {
 }
 
 var z_depth_data = {
+  "01B1" : 200,
   "03A" : 365,
 }
 
@@ -95,6 +97,11 @@ function on_scroll() {
   var focus_intensity_pool = 0;
 
   document.querySelectorAll('.main-content > img').forEach(el => {
+    z_depth = get_zdepth(el.src)
+    if (z_depth != -1){
+      el.style.zIndex = z_depth
+    }
+
     const depth = parseFloat(getComputedStyle(el).getPropertyValue('z-index')) || 0;
     const height = parseFloat(getComputedStyle(el).getPropertyValue('height')) || 0;
 
@@ -103,11 +110,6 @@ function on_scroll() {
     y_offset = manual_offset[1]
 
     scale = get_scale(el.src)
-
-    z_depth = get_zdepth(el.src)
-    if (z_depth != -1){
-      el.style.zIndex = z_depth
-    }
 
     // Calculating the distance between the center of the image and 
     // the center of the screen. The height dependant terms are 
